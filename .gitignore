@@ -1,5 +1,7 @@
 # Ignore uploaded files
 assets/uploads/
+!assets/uploads/signatures/
+!assets/uploads/signatures/*
 public/assets/uploads/
 
 #password
