@@ -303,7 +303,7 @@ if (isset($_SESSION['user_id'])) {
                 </li>
   
                 <li>
-                    <a href="<?php echo BASE_URL; ?>/logout.php" class="logout">
+                    <a href="<?php echo BASE_URL; ?>/logout.php?csrf_token=<?php echo csrf_token(); ?>" class="logout">
                         <i class="fas fa-sign-out-alt"></i> <span data-lang="logout">Logout</span>
                     </a>
                 </li>

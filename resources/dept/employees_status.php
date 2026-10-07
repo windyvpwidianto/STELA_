@@ -42,12 +42,44 @@ if (!empty($filter)) {
 }
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['action'] === 'resign_employee') {
+    header('Content-Type: application/json');
 
-    $id = (int)$_POST['employee_id'];
+    $id = (int)($_POST['employee_id'] ?? 0);
+    $date = trim($_POST['resign_date'] ?? '');
+    $reason = trim($_POST['resign_reason'] ?? '');
 
-    $date = $_POST['resign_date'];
+    if (!$id || empty($date) || empty($reason)) {
+        echo json_encode([
+            "success" => false,
+            "message" => "Semua field harus diisi."
+        ]);
+        exit;
+    }
 
-    $reason = trim($_POST['resign_reason']);
+    // [SECURITY] IDOR Protection: Verifikasi kepemilikan employee terhadap department/company
+    $authCompany = $_SESSION['company_name'] ?? '';
+    $authDept = $_SESSION['department'] ?? '';
+
+    $empCheck = $db->query("SELECT id, contractor_company, department FROM employees WHERE id = ? AND deleted_at IS NULL", [$id], "i");
+    if (!$empCheck || $empCheck->num_rows === 0) {
+        http_response_code(404);
+        echo json_encode(["success" => false, "message" => "Employee tidak ditemukan."]);
+        exit;
+    }
+
+    $empRow = $empCheck->fetch_assoc();
+    $canModify = false;
+    if (!empty($authDept) && $empRow['department'] === $authDept) {
+        $canModify = true;
+    } elseif (!empty($authCompany) && $empRow['contractor_company'] === $authCompany) {
+        $canModify = true;
+    }
+
+    if (!$canModify) {
+        http_response_code(403);
+        echo json_encode(["success" => false, "message" => "Akses ditolak: Anda tidak memiliki wewenang atas data karyawan ini."]);
+        exit;
+    }
 
     $stmt = $db->prepare("
         UPDATE employees
@@ -66,21 +98,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action']) && $_POST['
     );
 
     if($stmt->execute()){
-
         echo json_encode([
             "success"=>true
         ]);
-
     }else{
-
         echo json_encode([
-            "success"=>false
+            "success"=>false,
+            "message"=>"Gagal memperbarui status karyawan."
         ]);
-
     }
 
     exit;
-
 }
 // Get all employees with verification status and KTT rejection awareness
 $employees = $db->query("

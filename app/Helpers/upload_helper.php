@@ -60,7 +60,10 @@ if (!function_exists('handle_upload')) {
             return false;
         }
         
-        $filename = $prefix . '_' . $type . '_' . time() . '.' . $ext;
+        // [SECURITY] Generate cryptographically secure unguessable filename
+        $safe_prefix = preg_replace('/[^a-zA-Z0-9_\-]/', '', $prefix);
+        $random_suffix = bin2hex(random_bytes(16));
+        $filename = ($safe_prefix ?: 'doc') . '_' . $type . '_' . time() . '_' . $random_suffix . '.' . $ext;
         $dir      = upload_physical_dir($type);
         $dest     = $dir . $filename;
 

@@ -24,6 +24,21 @@ try {
         exit();
     }
 
+    // [SECURITY] Enforce POST and CSRF validation
+    if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+        http_response_code(405);
+        echo json_encode(['status' => 'error', 'message' => 'Method Not Allowed']);
+        exit();
+    }
+    if (!function_exists('verify_csrf_token')) {
+        require_once dirname(__DIR__) . '/app/Helpers/csrf_helper.php';
+    }
+    if (!verify_csrf_token()) {
+        http_response_code(403);
+        echo json_encode(['status' => 'error', 'message' => 'Invalid or missing CSRF token']);
+        exit();
+    }
+
     $db = new Database();
     $es = ElasticsearchService::getInstance();
 

@@ -90,7 +90,7 @@ if (!hasPermission('ktt.access') && $user_role !== 'admin' && $user_role !== 'su
         echo json_encode(['success' => false, 'message' => 'Forbidden: You do not have access to this appointment.']);
         exit;
     }
-    if ($user_role === 'dept' && $appointment['department'] !== $user_dept) {
+    if (($user_role === 'department_user' || $user_role === 'dept') && $appointment['department'] !== $user_dept) {
         http_response_code(403);
         echo json_encode(['success' => false, 'message' => 'Forbidden: You do not have access to this appointment.']);
         exit;

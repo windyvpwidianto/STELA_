@@ -34,14 +34,29 @@ if (!function_exists('csrf_field')) {
 if (!function_exists('verify_csrf_token')) {
     /**
      * Verify that the CSRF token in the request matches the one in the session.
-     * Should be called at the top of any script that handles POST requests.
+     * Supports $_POST, HTTP headers (X-CSRF-TOKEN), and JSON payloads.
      *
-     * @param string|null $token The token to verify (usually $_POST['csrf_token'])
+     * @param string|null $token The token to verify
      * @return bool True if valid, False otherwise
      */
     function verify_csrf_token($token = null) {
         if ($token === null) {
             $token = $_POST['csrf_token'] ?? '';
+            if (empty($token) && !empty($_SERVER['HTTP_X_CSRF_TOKEN'])) {
+                $token = $_SERVER['HTTP_X_CSRF_TOKEN'];
+            }
+            if (empty($token) && !empty($_SERVER['HTTP_X_XSRF_TOKEN'])) {
+                $token = $_SERVER['HTTP_X_XSRF_TOKEN'];
+            }
+            if (empty($token)) {
+                $raw = @file_get_contents('php://input');
+                if (!empty($raw)) {
+                    $json = @json_decode($raw, true);
+                    if (is_array($json) && !empty($json['csrf_token'])) {
+                        $token = $json['csrf_token'];
+                    }
+                }
+            }
         }
         
         if (empty($_SESSION['csrf_token']) || empty($token)) {

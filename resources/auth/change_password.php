@@ -55,6 +55,8 @@ if ($_SERVER['REQUEST_METHOD'] == 'POST' && isset($_POST['change_password'])) {
                 // Update password securely using parameterized query
                 $new_password_hash = password_hash($new_password, PASSWORD_DEFAULT);
                 if ($db->query("UPDATE users SET password = ? WHERE id = ?", [$new_password_hash, $user_id], "si")) {
+                    // [SECURITY] Invalidate all existing remember-me tokens to prevent session hijacking
+                    $db->query("DELETE FROM user_tokens WHERE user_id = ?", [$user_id], "i");
                     $message = stela_t('password-changed');
                     // Clear form
                     $_POST = array();

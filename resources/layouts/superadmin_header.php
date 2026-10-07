@@ -322,7 +322,7 @@ $current_page = get_current_page();
                     </a>
                 </li>
                 <li>
-                    <a href="<?php echo BASE_URL; ?>/logout.php" class="logout text-danger">
+                    <a href="<?php echo BASE_URL; ?>/logout.php?csrf_token=<?php echo csrf_token(); ?>" class="logout text-danger">
                         <i class="fas fa-sign-out-alt"></i> <span>Logout</span>
                     </a>
                 </li>

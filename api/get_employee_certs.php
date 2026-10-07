@@ -40,7 +40,7 @@ if (!isSuperadmin() && !isAdmin() && !isKTT()) {
             echo json_encode(['error' => 'Forbidden: You do not have access to this employee.']);
             exit;
         }
-        if ($user_role === 'dept' && $emp_data['department'] !== $user_dept) {
+        if (($user_role === 'department_user' || $user_role === 'dept') && $emp_data['department'] !== $user_dept) {
             http_response_code(403);
             echo json_encode(['error' => 'Forbidden: You do not have access to this employee.']);
             exit;

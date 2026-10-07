@@ -218,19 +218,16 @@ class Firewall {
         foreach ($inputs as $payload) {
             array_walk_recursive($payload, function($value) {
                 if (is_string($value)) {
-                    // 1. Basic SQL Injection patterns
+                    // 1. High-confidence SQL Injection attack patterns (avoids false-positives on normal text)
                     $sqlPatterns = [
-                        '/union\s+select/i',
-                        '/select\s+.*\s+from/i',
-                        '/insert\s+into/i',
-                        '/update\s+.*\s+set/i',
-                        '/delete\s+from/i',
-                        '/drop\s+table/i',
-                        '/truncate\s+table/i',
-                        '/exec\s*\(/i',
-                        '/benchmark\s*\(/i',
-                        '/sleep\s*\(/i',
-                        '/load_file\s*\(/i'
+                        '/\bunion\s+(all\s+)?select\b/i',
+                        '/\bdrop\s+table\b/i',
+                        '/\btruncate\s+table\b/i',
+                        '/\bbenchmark\s*\(\s*\d+/i',
+                        '/\bsleep\s*\(\s*\d+/i',
+                        '/\bload_file\s*\(/i',
+                        '/\binto\s+(outfile|dumpfile)\b/i',
+                        '/\binformation_schema\b/i'
                     ];
 
                     foreach ($sqlPatterns as $pattern) {

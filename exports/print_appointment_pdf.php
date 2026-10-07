@@ -1,5 +1,6 @@
 <?php
 require_once dirname(__DIR__) . '/bootstrap/app.php';
+require_once dirname(__DIR__) . '/app/Helpers/auth_helper.php';
 require_once dirname(__DIR__) . '/vendor/autoload.php';
 
 use Mpdf\Mpdf;
@@ -18,6 +19,7 @@ $appointment = $db->query("
            e.id_number, 
            e.position, 
            e.contractor_company, 
+           e.department,
            e.signature_file,
            e.competency_type,
            e.competency_name,
@@ -27,11 +29,30 @@ $appointment = $db->query("
     FROM appointments a
     JOIN employees e ON a.employee_id = e.id
     LEFT JOIN users u ON a.approved_by = u.id
-    WHERE a.id = $id
-")->fetch_assoc();
+    WHERE a.id = ?
+", [$id], "i")->fetch_assoc();
 
 if (!$appointment) {
     die('Data tidak ditemukan');
+}
+
+// [SECURITY] Authorization check
+if (!isSuperadmin() && !isAdmin() && !isKTT()) {
+    $user_role = $_SESSION['role'] ?? '';
+    $user_company = $_SESSION['company_name'] ?? '';
+    $user_dept = $_SESSION['department'] ?? '';
+
+    $isAllowed = false;
+    if ($user_role === 'user' && !empty($user_company) && ($appointment['contractor_company'] ?? '') === $user_company) {
+        $isAllowed = true;
+    } elseif (($user_role === 'department_user' || $user_role === 'dept') && !empty($user_dept) && ($appointment['department'] ?? '') === $user_dept) {
+        $isAllowed = true;
+    }
+
+    if (!$isAllowed) {
+        http_response_code(403);
+        die('Akses ditolak: Anda tidak memiliki izin untuk melihat dokumen ini.');
+    }
 }
 
 // Get all certificate numbers for this employee

@@ -157,6 +157,8 @@ class UserManagementHelper {
         $stmt = $this->db->prepare($query);
         $stmt->bind_param("si", $hash, $id);
         if ($stmt->execute()) {
+            // [SECURITY] Invalidate all remember-me tokens when admin resets a user's password
+            $this->db->query("DELETE FROM user_tokens WHERE user_id = ?", [$id], "i");
             return ['status' => 'success', 'message' => 'Password reset successfully.'];
         }
         return ['status' => 'error', 'message' => 'Failed to reset password.'];
@@ -171,15 +173,18 @@ class UserManagementHelper {
         $user = $this->getUserById($id);
         if (!$user) return ['status' => 'error', 'message' => 'User not found.'];
 
+        // [SECURITY] Invalidate remember-me tokens immediately
+        $this->db->query("DELETE FROM user_tokens WHERE user_id = ?", [$id], "i");
+
         // Check if user has operational history
         $hasHistory = false;
         
         // 1. Check appointments (approved_by, verified_by etc if exists)
-        $res1 = $this->db->query("SELECT id FROM appointments WHERE approved_by = $id LIMIT 1");
+        $res1 = $this->db->query("SELECT id FROM appointments WHERE approved_by = ? LIMIT 1", [$id], "i");
         if ($res1 && $res1->num_rows > 0) $hasHistory = true;
 
         // 2. Check employees (verified_by)
-        $res2 = $this->db->query("SELECT id FROM employees WHERE verified_by = $id LIMIT 1");
+        $res2 = $this->db->query("SELECT id FROM employees WHERE verified_by = ? LIMIT 1", [$id], "i");
         if ($res2 && $res2->num_rows > 0) $hasHistory = true;
 
         if ($hasHistory) {

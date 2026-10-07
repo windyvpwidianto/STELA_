@@ -50,7 +50,7 @@ ob_start();
     <h2><?= htmlspecialchars($title ?? "", ENT_QUOTES, "UTF-8") ?></h2>
     <div class="filter-info">
         Waktu Ekspor: <?= date('d M Y H:i:s') ?><br>
-        Filter: Scope (<?= $filters['scope'] ?: 'Semua' ?>) | Tipe (<?= $filters['competency_type'] ?: 'Semua' ?>) | Dept (<?= $filters['department'] ?: 'Semua' ?>) | Status (<?= $filters['status'] ?: 'Semua' ?>)
+        Filter: Scope (<?= htmlspecialchars($filters['scope'] ?: 'Semua', ENT_QUOTES, 'UTF-8') ?>) | Tipe (<?= htmlspecialchars($filters['competency_type'] ?: 'Semua', ENT_QUOTES, 'UTF-8') ?>) | Dept (<?= htmlspecialchars($filters['department'] ?: 'Semua', ENT_QUOTES, 'UTF-8') ?>) | Status (<?= htmlspecialchars($filters['status'] ?: 'Semua', ENT_QUOTES, 'UTF-8') ?>)
     </div>
     
     <table>
