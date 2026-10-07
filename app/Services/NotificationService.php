@@ -219,7 +219,7 @@ class NotificationService {
     /**
      * Get admin user contacts (email only)
      */
-    private function getAdminContacts() {
+    public function getAdminContacts() {
         $result = $this->db->query("
             SELECT id, username, full_name, email, phone
             FROM users
@@ -564,7 +564,7 @@ class NotificationService {
     /**
      * Send email and persist delivery status.
      */
-    private function sendEmailAndTrack($notification_type, $reference_id, $company_name, $to_email, $to_name, $subject, $message) {
+    public function sendEmailAndTrack($notification_type, $reference_id, $company_name, $to_email, $to_name, $subject, $message) {
         $result = $this->sendEmailDetailed($to_email, $to_name, $subject, $message);
         $this->logEmailDelivery(
             $notification_type,
@@ -953,7 +953,7 @@ class NotificationService {
     /**
      * Helper: Get user/dept contacts related to an employee's company or department
      */
-    private function getUserDeptContacts($contractor_company, $department = null) {
+    public function getUserDeptContacts($contractor_company, $department = null) {
         $contacts = [];
 
         // Get company users (role = 'user') matching by company_name
@@ -1082,7 +1082,7 @@ class NotificationService {
      * @param string $notification_type Notification type (for logging)
      * @param int    $reference_id      Reference ID (employee/appointment)
      */
-    private function sendWhatsApp($phone, $recipient_name, $message, $notification_type, $reference_id) {
+    public function sendWhatsApp($phone, $recipient_name, $message, $notification_type, $reference_id) {
         // Strip non-digit characters
         $phone = preg_replace('/\D/', '', $phone);
         if (empty($phone)) {

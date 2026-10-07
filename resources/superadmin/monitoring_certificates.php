@@ -81,10 +81,15 @@ require_once dirname(__DIR__) . '/layouts/superadmin_header.php';
 </style>
 
 <div class="container-fluid monitor-dashboard">
-    <div class="d-flex justify-content-between align-items-center mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
         <div>
             <h2 class="mb-1 fw-bold" style="color: #1e293b;">Certificate Monitoring</h2>
             <p class="text-muted mb-0">Track compliance and expiry of all employee certificates</p>
+        </div>
+        <div class="d-flex gap-2">
+            <button id="btnRunReminder" class="btn btn-warning text-dark fw-bold shadow-sm" onclick="triggerExpiryCheck()">
+                <i class="fas fa-bell me-1"></i> Cek & Kirim Pengingat Kedaluwarsa
+            </button>
         </div>
     </div>
 
@@ -287,5 +292,116 @@ require_once dirname(__DIR__) . '/layouts/superadmin_header.php';
         </div>
     </div>
 </div>
+
+<!-- Modal Result Pengingat Kedaluwarsa -->
+<div class="modal fade" id="reminderModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title fw-bold"><i class="fas fa-bell me-2"></i> Pengingat Masa Berlaku</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body p-4" id="reminderModalBody">
+                <div class="text-center py-3">
+                    <div class="spinner-border text-primary" role="status"></div>
+                    <p class="mt-2 text-muted">Sedang memindai sertifikat & SK...</p>
+                </div>
+            </div>
+            <div class="modal-footer bg-light">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Tutup</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function triggerExpiryCheck() {
+    const btn = document.getElementById('btnRunReminder');
+    const modalEl = document.getElementById('reminderModal');
+    const modal = new bootstrap.Modal(modalEl);
+    const modalBody = document.getElementById('reminderModalBody');
+    
+    modalBody.innerHTML = `
+        <div class="text-center py-4">
+            <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;"></div>
+            <h6 class="fw-bold text-dark">Sedang memproses pengecekan masa berlaku...</h6>
+            <p class="text-muted small mb-0">Memindai data sertifikat & SK, memeriksa threshold (H-90, H-60, H-30, H-7, Expired), memperbarui status, dan mengirimkan email serta WhatsApp.</p>
+        </div>
+    `;
+    modal.show();
+    btn.disabled = true;
+
+    const csrfToken = "<?= $_SESSION['csrf_token'] ?? '' ?>";
+    const formData = new FormData();
+    formData.append('csrf_token', csrfToken);
+
+    fetch('../../api/trigger_expiry_reminders.php', {
+        method: 'POST',
+        headers: {
+            'X-CSRF-TOKEN': csrfToken
+        },
+        body: formData
+    })
+    .then(res => res.json())
+    .then(data => {
+        btn.disabled = false;
+        if (data.status === 'success') {
+            const summary = data.data;
+            let certList = '';
+            if (summary.details.certificates && summary.details.certificates.length > 0) {
+                certList = '<ul class="list-group list-group-flush mt-2 small text-start" style="max-height: 180px; overflow-y: auto;">';
+                summary.details.certificates.forEach(c => {
+                    certList += `<li class="list-group-item px-2 py-1"><i class="fas fa-angle-right me-1 text-primary"></i> ${c}</li>`;
+                });
+                certList += '</ul>';
+            } else {
+                certList = '<p class="text-muted small mt-2 mb-0">Semua notifikasi pengingat untuk periode saat ini sudah pernah terkirim (tidak ada duplikasi).</p>';
+            }
+
+            modalBody.innerHTML = `
+                <div class="text-center mb-3">
+                    <i class="fas fa-check-circle text-success" style="font-size: 3rem;"></i>
+                    <h5 class="fw-bold mt-2">Pengecekan Selesai</h5>
+                    <p class="text-muted small mb-0">${data.message}</p>
+                </div>
+                <div class="row g-2 text-center mb-3">
+                    <div class="col-6">
+                        <div class="p-2 border rounded bg-light">
+                            <div class="fw-bold fs-5 text-primary">${summary.cert_reminders_sent}</div>
+                            <small class="text-muted">Notifikasi Terkirim</small>
+                        </div>
+                    </div>
+                    <div class="col-6">
+                        <div class="p-2 border rounded bg-light">
+                            <div class="fw-bold fs-5 text-danger">${summary.cert_auto_expired}</div>
+                            <small class="text-muted">Status Auto-Expired</small>
+                        </div>
+                    </div>
+                </div>
+                <h6 class="fw-bold fs-6 mb-1 text-start">Rincian Tindakan:</h6>
+                ${certList}
+            `;
+        } else {
+            modalBody.innerHTML = `
+                <div class="text-center py-3">
+                    <i class="fas fa-exclamation-circle text-danger" style="font-size: 3rem;"></i>
+                    <h5 class="fw-bold mt-2 text-danger">Gagal Menjalankan Pengecekan</h5>
+                    <p class="text-muted mb-0">${data.message || 'Terjadi kesalahan sistem.'}</p>
+                </div>
+            `;
+        }
+    })
+    .catch(err => {
+        btn.disabled = false;
+        modalBody.innerHTML = `
+            <div class="text-center py-3">
+                <i class="fas fa-times-circle text-danger" style="font-size: 3rem;"></i>
+                <h5 class="fw-bold mt-2 text-danger">Koneksi Gagal</h5>
+                <p class="text-muted mb-0">Tidak dapat terhubung ke server API.</p>
+            </div>
+        `;
+    });
+}
+</script>
 
 <?php require_once dirname(__DIR__) . '/layouts/footer.php'; ?>
